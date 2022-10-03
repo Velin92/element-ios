@@ -165,11 +165,11 @@ final class RiotSettings: NSObject {
     }
 
     /// Flag indicating if the new session manager is enabled
-    @UserDefault(key: "enableNewSessionManager", defaultValue: false, storage: defaults)
+    @UserDefault(key: "enableNewSessionManager", defaultValue: true, storage: defaults)
     var enableNewSessionManager
 
     /// Flag indicating if the new client information feature is enabled
-    @UserDefault(key: "enableClientInformationFeature", defaultValue: false, storage: defaults)
+    @UserDefault(key: "enableClientInformationFeature", defaultValue: true, storage: defaults)
     var enableClientInformationFeature
 
     // MARK: Calls
