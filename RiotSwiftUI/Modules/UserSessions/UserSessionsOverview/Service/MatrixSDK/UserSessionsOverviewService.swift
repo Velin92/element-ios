@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-import Foundation
+import Combine
 import MatrixSDK
 
 class UserSessionsOverviewService: UserSessionsOverviewServiceProtocol {
@@ -23,15 +23,15 @@ class UserSessionsOverviewService: UserSessionsOverviewServiceProtocol {
     
     private let dataProvider: UserSessionsDataProviderProtocol
     
-    private(set) var overviewData: UserSessionsOverviewData
+    private(set) var overviewDataPublisher: CurrentValueSubject<UserSessionsOverviewData, Never>
     
     init(dataProvider: UserSessionsDataProviderProtocol) {
         self.dataProvider = dataProvider
         
-        overviewData = UserSessionsOverviewData(currentSession: nil,
-                                                unverifiedSessions: [],
-                                                inactiveSessions: [],
-                                                otherSessions: [])
+        overviewDataPublisher = .init(UserSessionsOverviewData(currentSession: nil,
+                                                               unverifiedSessions: [],
+                                                               inactiveSessions: [],
+                                                               otherSessions: []))
         
         setupInitialOverviewData()
     }
@@ -42,8 +42,9 @@ class UserSessionsOverviewService: UserSessionsOverviewServiceProtocol {
         dataProvider.devices { response in
             switch response {
             case .success(let devices):
-                self.overviewData = self.sessionsOverviewData(from: devices)
-                completion(.success(self.overviewData))
+                let overviewData = self.sessionsOverviewData(from: devices)
+                self.overviewDataPublisher.send(overviewData)
+                completion(.success(overviewData))
             case .failure(let error):
                 completion(.failure(error))
             }
@@ -51,11 +52,11 @@ class UserSessionsOverviewService: UserSessionsOverviewServiceProtocol {
     }
     
     func sessionForIdentifier(_ sessionId: String) -> UserSessionInfo? {
-        if overviewData.currentSession?.id == sessionId {
-            return overviewData.currentSession
+        if currentSession?.id == sessionId {
+            return currentSession
         }
         
-        return overviewData.otherSessions.first(where: { $0.id == sessionId })
+        return otherSessions.first(where: { $0.id == sessionId })
     }
     
     // MARK: - Private
@@ -65,10 +66,10 @@ class UserSessionsOverviewService: UserSessionsOverviewServiceProtocol {
             return
         }
         
-        overviewData = UserSessionsOverviewData(currentSession: currentSessionInfo,
-                                                unverifiedSessions: currentSessionInfo.isVerified ? [] : [currentSessionInfo],
-                                                inactiveSessions: currentSessionInfo.isActive ? [] : [currentSessionInfo],
-                                                otherSessions: [])
+        overviewDataPublisher = .init(UserSessionsOverviewData(currentSession: currentSessionInfo,
+                                                               unverifiedSessions: currentSessionInfo.isVerified ? [] : [currentSessionInfo],
+                                                               inactiveSessions: currentSessionInfo.isActive ? [] : [currentSessionInfo],
+                                                               otherSessions: []))
     }
     
     private func getCurrentSessionInfo() -> UserSessionInfo? {

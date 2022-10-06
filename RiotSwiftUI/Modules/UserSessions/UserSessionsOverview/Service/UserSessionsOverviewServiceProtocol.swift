@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-import Foundation
+import Combine
 
 struct UserSessionsOverviewData {
     let currentSession: UserSessionInfo?
@@ -24,9 +24,16 @@ struct UserSessionsOverviewData {
 }
 
 protocol UserSessionsOverviewServiceProtocol {
-    var overviewData: UserSessionsOverviewData { get }
+    var overviewDataPublisher: CurrentValueSubject<UserSessionsOverviewData, Never> { get }
     
     func updateOverviewData(completion: @escaping (Result<UserSessionsOverviewData, Error>) -> Void) -> Void
     
     func sessionForIdentifier(_ sessionId: String) -> UserSessionInfo?
+}
+
+extension UserSessionsOverviewServiceProtocol {
+    var currentSession: UserSessionInfo? { overviewDataPublisher.value.currentSession }
+    var unverifiedSessions: [UserSessionInfo] { overviewDataPublisher.value.unverifiedSessions }
+    var inactiveSessions: [UserSessionInfo] { overviewDataPublisher.value.inactiveSessions }
+    var otherSessions: [UserSessionInfo] { overviewDataPublisher.value.otherSessions }
 }
